@@ -1,0 +1,111 @@
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+import sklearn
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import f_regression
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+os.chdir("D:/DataScience/Python Part 2/Class 14/Assignment/Case 1")
+os.listdir()
+rdata=pd.read_csv('voice.csv')
+rdata.head()
+rdata.columns
+rdata.describe(include='all')
+#Finding '0' values-
+
+(rdata==0).sum()
+#covert '0' to NaN
+
+rdata=rdata.replace(0,np.NaN)
+rdata
+(rdata==0).sum()
+#Finding Missing values
+rdata.isnull().sum()
+rdata.keys()
+rdata.shape
+rdata['mode']=rdata['mode'].fillna(rdata.mean()['mode'])
+rdata.isnull().sum()
+rdata['dfrange']=rdata['dfrange'].fillna(method='bfill')
+rdata['modindx']=rdata['modindx'].fillna(method='bfill')
+rdata.isnull().sum()
+
+cdata=rdata
+cdata.shape
+#Make dummy values
+
+dlabel=pd.get_dummies(cdata['label'],drop_first=True)
+#dlabel
+data_wl=cdata.drop(['label'],axis=1)
+data_wl.head()
+data_wl.shape
+#Concatination
+datao=pd.concat([data_wl,dlabel],axis=1)
+datao.shape
+datao.head()
+#Checking Outliers
+
+Q1=datao.quantile(0.25)
+Q3=datao.quantile(0.75)
+IQR=1.5*(Q3-Q1)
+IQR
+
+((datao<Q1-IQR)|(datao>Q3+IQR))
+data=datao[~((datao<Q1-IQR)|(datao>Q3+IQR)).any(axis=1)]
+data.shape
+data.head()
+x=data.drop('male',axis=1)
+x
+y=data['male']
+#Splitting
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.30,random_state=52)
+y_train_matrix=y_train.replace(-1,1)
+y_test_matrix=y_test.replace(-1,1)
+#Making Model
+
+#svc=SVC(kernel='linear',C=C,decision_function_shape='ovr')
+svc=SVC(kernel='linear')
+
+
+model=svc.fit(x_train,y_train_matrix)
+#Prediction
+
+y_pred=model.predict(x_test)
+#Accuracy
+"Accuracy:",accuracy_score(y_test_matrix,y_pred)
+
+# 93%
+
+#Tuning The Model
+C=1
+parameters=[{'C':[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}]
+
+
+newmodel=GridSearchCV(SVC(kernel='linear',C=C,decision_function_shape='ovr'),parameters,cv=5)
+
+#newmodel=GridSearchCV(svm.SVC(decision_function_shape='ovr',kernel='linear'),parameters,cv=5)
+newmodel.fit(x_train,y_train_matrix)
+print(newmodel.best_params_)
+y_pred=newmodel.predict(x_test)
+#Accuracy
+"Accuracy:",accuracy_score(y_test_matrix,y_pred)
+#97 % after Tuning.
+
+"Classification:",classification_report(y_test_matrix,y_pred)
+c=np.array(confusion_matrix(y_test_matrix,y_pred))
+confusion=pd.DataFrame(c)
+confusion
+sns.heatmap(confusion,annot=True)
+
+
+
+
+
